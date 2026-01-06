@@ -14,6 +14,7 @@ class Config(object):
         self.output_dir = None
         self.id_tr_data_path = None
         self.id_te_data_path = None
+        self.id_val_data_path = None
         self.set_instruction_key = None
         self.ood_tr_data_path = None
         self.ood_te_data_path = None
@@ -54,6 +55,7 @@ class Config(object):
         parser.add_argument('-output_dir', type=str)
         parser.add_argument('-id_tr_data_path', type=str)
         parser.add_argument('-id_te_data_path', type=str)
+        parser.add_argument('-id_val_data_path', type=str)
         parser.add_argument('-set_instruction_key', type=int, default=1)
         parser.add_argument('-ood_tr_data_path', type=str)
         parser.add_argument('-ood_te_data_path', type=str)

@@ -9,6 +9,9 @@ from InstructABSA.utils import T5Generator, T5Classifier
 from InstructABSA.config import Config
 from instructions import InstructionsHandler
 
+import wandb
+from datetime import datetime
+
 try:
     use_mps = True if torch.has_mps else False
 except:
@@ -22,6 +25,7 @@ if config.inst_type == 1:
 else:
     instruct_handler.load_instruction_set2()
 
+current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
 print('Task: ', config.task)
 
 if config.mode == 'train':
@@ -36,7 +40,7 @@ if config.experiment_name is not None and config.mode == 'train':
     print('Experiment Name: ', config.experiment_name)
     model_checkpoint = config.model_checkpoint
     model_out_path = config.output_dir
-    model_out_path = os.path.join(model_out_path, config.task, f"{model_checkpoint.replace('/', '')}-{config.experiment_name}")
+    model_out_path = os.path.join(model_out_path, config.task, f"{model_checkpoint.replace('/', '')}-{config.experiment_name}-{current_time}")
 else:
     model_checkpoint = config.model_checkpoint
     model_out_path = config.model_checkpoint
@@ -46,17 +50,21 @@ print('Mode set to: ', 'training' if config.mode == 'train' else ('inference' if
 
 # Load the data
 id_tr_data_path = config.id_tr_data_path
-ood_tr_data_path = config.ood_tr_data_path
 id_te_data_path = config.id_te_data_path
+id_val_data_path = config.id_val_data_path
+
+ood_tr_data_path = config.ood_tr_data_path
 ood_te_data_path = config.ood_te_data_path
 
 if config.mode != 'cli':
-    id_tr_df,  id_te_df = None, None
+    id_tr_df, id_te_df, id_val_df = None, None, None
     ood_tr_df,  ood_te_df = None, None
     if id_tr_data_path is not None:
         id_tr_df = pd.read_csv(id_tr_data_path)
     if id_te_data_path is not None:
         id_te_df = pd.read_csv(id_te_data_path)
+    if id_val_data_path is not None:
+        id_val_df = pd.read_csv(id_val_data_path)
     if ood_tr_data_path is not None:
         ood_tr_df = pd.read_csv(ood_tr_data_path)
     if ood_te_data_path is not None:
@@ -64,24 +72,6 @@ if config.mode != 'cli':
     print('Loaded data...')
 else:
     print('Running inference on input: ', config.test_input)
-
-# Training arguments
-training_args = {
-                'output_dir': model_out_path,
-                'evaluation_strategy': config.evaluation_strategy if config.id_te_data_path is not None else 'no',
-                'learning_rate': config.learning_rate,
-                'per_device_train_batch_size': config.per_device_train_batch_size if config.per_device_train_batch_size is not None else None,
-                'per_device_eval_batch_size': config.per_device_eval_batch_size,
-                'num_train_epochs': config.num_train_epochs if config.num_train_epochs is not None else None,
-                'weight_decay': config.weight_decay,
-                'warmup_ratio': config.warmup_ratio,
-                'save_strategy': config.save_strategy,
-                'load_best_model_at_end': config.load_best_model_at_end,
-                'push_to_hub': config.push_to_hub,
-                'eval_accumulation_steps': config.eval_accumulation_steps,
-                'predict_with_generate': config.predict_with_generate,
-                'use_mps_device': use_mps
-            }
 
 # Create T5 model object
 print(config.set_instruction_key)
@@ -114,42 +104,36 @@ if config.task == 'joint':
 
 if config.mode != 'cli':
     # Define function to load datasets and tokenize datasets
-    loader = DatasetLoader(id_tr_df, id_te_df, ood_tr_df, ood_te_df, config.sample_size)
-    if config.task == 'ate':
-        if loader.train_df_id is not None:
-            loader.train_df_id = loader.create_data_in_ate_format(loader.train_df_id, 'term', 'raw_text', 'aspectTerms', bos_instruction_id, eos_instruction)
-        if loader.test_df_id is not None:
-            loader.test_df_id = loader.create_data_in_ate_format(loader.test_df_id, 'term', 'raw_text', 'aspectTerms', bos_instruction_id, eos_instruction)
-        if loader.train_df_ood is not None:
-            loader.train_df_ood = loader.create_data_in_ate_format(loader.train_df_ood, 'term', 'raw_text', 'aspectTerms', bos_instruction_ood, eos_instruction)
-        if loader.test_df_ood is not None:
-            loader.test_df_ood = loader.create_data_in_ate_format(loader.test_df_ood, 'term', 'raw_text', 'aspectTerms', bos_instruction_ood, eos_instruction)
-
-    elif config.task == 'atsc':
-        if loader.train_df_id is not None:
-            loader.train_df_id = loader.create_data_in_atsc_format(loader.train_df_id, 'aspectTerms', 'term', 'raw_text', 'aspect', bos_instruction_id, delim_instruction, eos_instruction)
-        if loader.test_df_id is not None:
-            loader.test_df_id = loader.create_data_in_atsc_format(loader.test_df_id, 'aspectTerms', 'term', 'raw_text', 'aspect', bos_instruction_id, delim_instruction, eos_instruction)
-        if loader.train_df_ood is not None:
-            loader.train_df_ood = loader.create_data_in_atsc_format(loader.train_df_ood, 'aspectTerms', 'term', 'raw_text', 'aspect', bos_instruction_ood, delim_instruction, eos_instruction)
-        if loader.test_df_ood is not None:
-            loader.test_df_ood = loader.create_data_in_atsc_format(loader.test_df_ood, 'aspectTerms', 'term', 'raw_text', 'aspect', bos_instruction_ood, delim_instruction, eos_instruction)
-
-    elif config.task == 'joint':
-        if loader.train_df_id is not None:
-            loader.train_df_id = loader.create_data_in_joint_task_format(loader.train_df_id, 'term', 'polarity', 'raw_text', 'aspectTerms', bos_instruction_id, eos_instruction)
-        if loader.test_df_id is not None:
-            loader.test_df_id = loader.create_data_in_joint_task_format(loader.test_df_id, 'term', 'polarity', 'raw_text', 'aspectTerms', bos_instruction_id, eos_instruction)
-        if loader.train_df_ood is not None:
-            loader.train_df_ood = loader.create_data_in_joint_task_format(loader.train_df_ood, 'term', 'polarity', 'raw_text', 'aspectTerms', bos_instruction_ood, eos_instruction)
-        if loader.test_df_ood is not None:
-            loader.test_df_ood = loader.create_data_in_joint_task_format(loader.test_df_ood, 'term', 'polarity', 'raw_text', 'aspectTerms', bos_instruction_ood, eos_instruction)
+    loader = DatasetLoader(train_df_id=id_tr_df, test_df_id=id_te_df, val_df_id=id_val_df, sample_size=config.sample_size)
 
     # Tokenize dataset
     id_ds, id_tokenized_ds, ood_ds, ood_tokenized_ds = loader.set_data_for_training_semeval(t5_exp.tokenize_function_inputs) 
 
     if config.mode == 'train':
         # Train model
+        print("Using learning rate:", config.learning_rate)
+        # Training arguments
+        training_args = {
+            'output_dir': model_out_path,
+            'eval_strategy': config.evaluation_strategy if config.id_te_data_path is not None else 'no',
+            'learning_rate': config.learning_rate,
+            'per_device_train_batch_size': config.per_device_train_batch_size if config.per_device_train_batch_size is not None else None,
+            'per_device_eval_batch_size': config.per_device_eval_batch_size,
+            'num_train_epochs': config.num_train_epochs if config.num_train_epochs is not None else None,
+            'weight_decay': config.weight_decay,
+            'warmup_ratio': config.warmup_ratio,
+            'save_strategy': config.save_strategy,
+            'load_best_model_at_end': config.load_best_model_at_end,
+            'push_to_hub': config.push_to_hub,
+            'eval_accumulation_steps': config.eval_accumulation_steps,
+            'predict_with_generate': config.predict_with_generate,
+            'use_mps_device': use_mps,
+            'logging_strategy': 'steps',
+            'logging_steps': 1,
+            'report_to': 'wandb',
+            'run_name': f"instruct_absa_mt5_lr-{config.learning_rate}_samplesize-{config.sample_size if config.sample_size is not None else 'all'}_data-{config.id_tr_data_path.split('/')[3]}_{current_time}"
+        }
+        os.environ["WANDB_PROJECT"] = "instruct-absa-seq2seq"
         model_trainer = t5_exp.train(id_tokenized_ds, **training_args)
         print('Model saved at: ', model_out_path)
     elif config.mode == 'eval':
@@ -173,20 +157,36 @@ if config.mode != 'cli':
 
 
         if id_tokenized_ds.get("test") is not None:
+            output_dir = os.path.join(config.output_path, config.task, f"{model_checkpoint.split('/')[-1]}")
+            os.makedirs(output_dir, exist_ok=True)
             id_te_pred_labels = t5_exp.get_labels(tokenized_dataset = id_tokenized_ds, sample_set = 'test', 
                                                   batch_size=config.per_device_eval_batch_size, 
                                                   max_length = config.max_token_length)
             id_te_df = pd.DataFrame(id_ds['test'])[['text', 'labels']]
-            id_te_df['labels'] = id_te_df['labels'].apply(lambda x: x.strip())
+            id_te_df.loc[id_te_df["labels"].isnull()] = "null"
+            id_te_df['labels'] = id_te_df['labels'].str.strip()
             id_te_df['pred_labels'] = id_te_pred_labels
-            id_te_df.to_csv(os.path.join(config.output_path, f'{config.experiment_name}_id_test.csv'), index=False)
+            id_te_df.to_csv(os.path.join(output_dir, 'raw_inference_results.csv'), index=False)
+
             print('*****Test Metrics*****')
             precision, recall, f1, accuracy = t5_exp.get_metrics(id_te_df['labels'], id_te_pred_labels)
+            results_metrics = {
+                "precision": precision,
+                "recall": recall,
+                "f1_score": f1,
+            }
             print('Precision: ', precision)
             print('Recall: ', recall)
             print('F1-Score: ', f1)
             if config.task == 'atsc':
+                results_metrics["accuracy"] = accuracy
                 print('Accuracy: ', accuracy)
+
+            output_file = os.path.join(output_dir, 'evaluation_results.json')
+            with open(output_file, 'w') as f:
+                import json
+                json.dump(results_metrics, f, indent=4)
+            print(f"Saved evaluation results to {output_file}")
 
         if ood_tokenized_ds.get("train") is not None:
             ood_tr_pred_labels = t5_exp.get_labels(tokenized_dataset = ood_tokenized_ds, sample_set = 'train', 

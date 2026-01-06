@@ -21,8 +21,17 @@ class T5Generator:
         """
         Udf to tokenize the input dataset.
         """
-        model_inputs = self.tokenizer(sample['text'], max_length=512, truncation=True)
-        labels = self.tokenizer(sample["labels"], max_length=64, truncation=True)
+        if isinstance(sample['text'], list):
+            sample['text'] = [str(s) for s in sample['text']]
+        else:
+            sample['text'] = str(sample['text'])
+        model_inputs = self.tokenizer(sample['text'], max_length=512, truncation=True, padding=True)
+
+        if isinstance(sample['labels'], list):
+            sample['labels'] = [str(s) for s in sample['labels']]
+        else:
+            sample['labels'] = str(sample['labels'])
+        labels = self.tokenizer(sample["labels"], max_length=64, truncation=True, padding=True)
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
         
@@ -44,7 +53,7 @@ class T5Generator:
             tokenizer=self.tokenizer,
             data_collator=self.data_collator,
         )
-        print("Trainer device:", trainer.args.device)
+        # print("Trainer device:", trainer.args.device
 
         # Finetune the model
         torch.cuda.empty_cache()

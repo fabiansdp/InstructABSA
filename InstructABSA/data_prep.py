@@ -68,11 +68,12 @@ class DatasetLoader:
         if min_val is not None:
             df.loc[df['len'] == 0, 'len'] = min_val
         df = df.loc[df.index.repeat(df['len'])]
+
         df['record_idx'] = df.groupby(df.index).cumcount()
-        df['aspect'] = df[[aspect_col, 'record_idx']].apply(lambda x : x[0][x[1]][key] if len(x[0]) != 0 else '', axis=1)
-        df['opinion_term'] = df[[opinion_col, 'record_idx']].apply(lambda x : x[0][x[1]][key] if len(x[0]) != 0 else '', axis=1)
-        df['aspect'] = df['aspect'].apply(lambda x: ' '.join(x))
-        df['opinion_term'] = df['opinion_term'].apply(lambda x: ' '.join(x))
+        df['aspect'] = df[[aspect_col, 'record_idx']].apply(lambda x : x[0][x[1]]['term'] if len(x[0]) != 0 else '', axis=1)
+        df['opinion_term'] = df[[opinion_col, 'record_idx']].apply(lambda x : x[0][x[1]]['opinion'] if len(x[0]) != 0 else '', axis=1)
+        # df['aspect'] = df['aspect'].apply(lambda x: ' '.join(x))
+        # df['opinion_term'] = df['opinion_term'].apply(lambda x: ' '.join(x))
         df = df.drop(['len', 'record_idx'], axis=1).reset_index(drop = True)
         return df
 
@@ -110,10 +111,12 @@ class DatasetLoader:
         """
         if df is None:
             return
+        print(df["targets"].iloc[0])
         try:
             df.iloc[0][aspect_col][0][key]
         except:
             df = self.reconstruct_strings(df, aspect_col)
+
         df['labels'] = df[aspect_col].apply(lambda x: ', '.join([f"{i[key]}:{i[label_key]}" for i in x]))
         df['text'] = df[text_col].apply(lambda x: bos_instruction + x + eos_instruction)
         return df
@@ -130,22 +133,24 @@ class DatasetLoader:
         df = df.rename(columns = {'opinion_term': 'labels'})
         return df
     
-    def create_data_in_aope_format(self, df, key, text_col, aspect_col, opinion_col,
+    def create_data_in_aope_format(self, df, text_col, target_col, aspect_key, opinion_key,
                                          bos_instruction = '', eos_instruction = ''):
         """
         Prepare the data in the input format required.
         """
-        df['labels'] = df[[aspect_col, opinion_col]].apply(lambda x: ', '.join([f"{' '.join(i[key])}:{' '.join(j[key])}" for i, j in zip(x[0], x[1])]), axis=1)
+        df['labels'] = df[target_col].apply(lambda x: ', '.join([f"{i[aspect_key]}:{i[opinion_key]}" for i in x]))
+        # df['labels'] = df[[aspect_col, opinion_col]].apply(lambda x: ', '.join([f"{' '.join(i[key])}:{' '.join(j[key])}" for i, j in zip(x[0], x[1])]), axis=1)
         df['text'] = df[text_col].apply(lambda x: bos_instruction + x + eos_instruction)
         return df
     
-    def create_data_in_aoste_format(self, df, key, label_key, text_col, aspect_col, opinion_col,
+    def create_data_in_aoste_format(self, df, target_col, text_col,
                                          bos_instruction = '', eos_instruction = ''):
         """
         Prepare the data in the input format required.
         """
         label_map = {'POS':'positive', 'NEG':'negative', 'NEU':'neutral'}
-        df['labels'] = df[[aspect_col, opinion_col]].apply(lambda x: ', '.join([f"{' '.join(i[key])}:{' '.join(j[key])}:{label_map[i[label_key]]}" for i, j in zip(x[0], x[1])]), axis=1)
+        df['labels'] = df[target_col].apply(lambda x: ', '.join([f"{i['term']}:{i['opinion']}:{i['polarity']}" for i in x]))
+        # df['labels'] = df[[aspect_col, opinion_col]].apply(lambda x: ', '.join([f"{' '.join(i[key])}:{' '.join(j[key])}:{label_map[i[label_key]]}" for i, j in zip(x[0], x[1])]), axis=1)
         df['text'] = df[text_col].apply(lambda x: bos_instruction + x + eos_instruction)
         return df
     
@@ -162,12 +167,13 @@ class DatasetLoader:
             dataset_dict_id['test'] = Dataset.from_pandas(self.test_df_id)
         if self.val_df_id is not None:
             dataset_dict_id['validation'] = Dataset.from_pandas(self.val_df_id)
-        if len(dataset_dict_id) > 1:
-            indomain_dataset = DatasetDict(dataset_dict_id)
-            indomain_tokenized_datasets = indomain_dataset.map(tokenize_function, batched=True)
-        else:
-            indomain_dataset = {}
-            indomain_tokenized_datasets = {}
+
+        indomain_dataset = DatasetDict(dataset_dict_id)
+        indomain_tokenized_datasets = indomain_dataset.map(tokenize_function, batched=True)
+        # if len(dataset_dict_id) > 1:
+        # else:
+        #     indomain_dataset = {}
+        #     indomain_tokenized_datasets = {}
 
         if self.train_df_ood is not None:
             dataset_dict_ood['train'] = Dataset.from_pandas(self.train_df_ood)
