@@ -88,6 +88,31 @@ if config.task == 'ate':
     if ood_tr_data_path is not None or ood_te_data_path is not None:
         bos_instruction_ood = instruct_handler.ate[outdomain]
     eos_instruction = instruct_handler.ate['eos_instruct']
+if config.task == 'aspe':
+    t5_exp = T5Generator(model_checkpoint)
+    bos_instruction_id = instruct_handler.aspe[indomain]
+    if ood_tr_data_path is not None or ood_te_data_path is not None:
+        bos_instruction_ood = instruct_handler.aspe[outdomain]
+    eos_instruction = instruct_handler.aspe['eos_instruct']
+if config.task == 'aoste':
+    t5_exp = T5Generator(model_checkpoint)
+    bos_instruction_id = instruct_handler.aoste[indomain]
+    if ood_tr_data_path is not None or ood_te_data_path is not None:
+        bos_instruction_ood = instruct_handler.aoste[outdomain]
+    eos_instruction = instruct_handler.aoste['eos_instruct']
+if config.task == 'aope':
+    t5_exp = T5Generator(model_checkpoint)
+    bos_instruction_id = instruct_handler.aope[indomain]
+    if ood_tr_data_path is not None or ood_te_data_path is not None:
+        bos_instruction_ood = instruct_handler.aope[outdomain]
+    eos_instruction = instruct_handler.aope['eos_instruct']
+if config.task == 'aooe':
+    t5_exp = T5Classifier(model_checkpoint)
+    bos_instruction_id = instruct_handler.aooe[indomain]
+    if ood_tr_data_path is not None or ood_te_data_path is not None:
+        bos_instruction_ood = instruct_handler.aooe[outdomain]
+    delim_instruction = instruct_handler.aooe['delim_instruct']
+    eos_instruction = instruct_handler.aooe['eos_instruct']
 if config.task == 'atsc':
     t5_exp = T5Classifier(model_checkpoint)
     bos_instruction_id = instruct_handler.atsc[indomain]
@@ -131,7 +156,10 @@ if config.mode != 'cli':
             'logging_strategy': 'steps',
             'logging_steps': 1,
             'report_to': 'wandb',
-            'run_name': f"instruct_absa_mt5_lr-{config.learning_rate}_samplesize-{config.sample_size if config.sample_size is not None else 'all'}_data-{config.id_tr_data_path.split('/')[3]}_{current_time}"
+            'run_name': f"instruct_absa_mt5_lr-{config.learning_rate}_samplesize-{config.sample_size if config.sample_size is not None else 'all'}_data-{config.id_tr_data_path.split('/')[3]}_{current_time}",
+
+            'seed': config.seed,
+            'data_seed': config.seed
         }
         os.environ["WANDB_PROJECT"] = "instruct-absa-seq2seq"
         model_trainer = t5_exp.train(id_tokenized_ds, **training_args)
@@ -152,7 +180,7 @@ if config.mode != 'cli':
             print('Precision: ', precision)
             print('Recall: ', recall)
             print('F1-Score: ', f1)
-            if config.task == 'atsc':
+            if config.task == 'atsc' or config.task == 'aooe':
                 print('Accuracy: ', accuracy)
 
 
@@ -178,7 +206,7 @@ if config.mode != 'cli':
             print('Precision: ', precision)
             print('Recall: ', recall)
             print('F1-Score: ', f1)
-            if config.task == 'atsc':
+            if config.task == 'atsc' or config.task == 'aooe':
                 results_metrics["accuracy"] = accuracy
                 print('Accuracy: ', accuracy)
 
@@ -201,7 +229,7 @@ if config.mode != 'cli':
             print('Precision: ', precision)
             print('Recall: ', precision)
             print('F1-Score: ', precision)
-            if config.task == 'atsc':
+            if config.task == 'atsc' or config.task == 'aooe':
                 print('Accuracy: ', accuracy)
             
         if ood_tokenized_ds.get("test") is not None:
@@ -217,11 +245,11 @@ if config.mode != 'cli':
             print('Precision: ', precision)
             print('Recall: ', precision)
             print('F1-Score: ', precision)
-            if config.task == 'atsc':
+            if config.task == 'atsc' or config.task == 'aooe':
                 print('Accuracy: ', accuracy)
 else:
     print('Model loaded from: ', model_checkpoint)
-    if config.task == 'atsc':
+    if config.task == 'atsc' or config.task == 'aooe':
         config.test_input, aspect_term = config.test_input.split('|')[0], config.test_input.split('|')[1]
         model_input = bos_instruction_id + config.test_input + f'. The aspect term is: {aspect_term}' + eos_instruction
     else:

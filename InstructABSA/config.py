@@ -7,6 +7,7 @@ class Config(object):
         Defaults
         """
         self.mode = None
+        self.seed = None
         self.model_checkpoint = None
         self.inst_type = None
         self.experiment_name = None
@@ -73,4 +74,5 @@ class Config(object):
         parser.add_argument('-predict_with_generate', help='Predict with generate', default=True, type=bool)
         parser.add_argument('-max_token_length', help='Sets maximum token output length', default=128, type=bool)
         parser.add_argument('-test_input', help='The input review to test', type=str)
+        parser.add_argument('-seed', help='Random seed', default=42, type=int)
         return parser
