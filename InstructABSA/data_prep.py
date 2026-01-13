@@ -111,7 +111,6 @@ class DatasetLoader:
         """
         if df is None:
             return
-        print(df["targets"].iloc[0])
         try:
             df.iloc[0][aspect_col][0][key]
         except:
