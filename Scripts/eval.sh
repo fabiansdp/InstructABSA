@@ -9,5 +9,5 @@ export CUDA_VISIBLE_DEVICES="$GPU"
 
 python run_model.py -mode eval -model_checkpoint "$MODEL_PATH" \
 -task "$TASK" -output_path ./Output \
--id_te_data_path "./dataset/${LANGUAGE}/${DATASET_TYPE}/${TASK}/test.csv" \
+-id_te_data_path "./Dataset/${DATASET_TYPE}/${TASK}/test.csv" \
 -seed "$SEED"
