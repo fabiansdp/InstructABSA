@@ -7,7 +7,7 @@ import torch
 from InstructABSA.data_prep import DatasetLoader
 from InstructABSA.utils import T5Generator, T5Classifier
 from InstructABSA.config import Config
-from instructions import InstructionsHandler
+from instructions_indo import InstructionsHandler
 
 # import wandb
 from datetime import datetime
