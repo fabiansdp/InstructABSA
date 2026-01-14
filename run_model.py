@@ -9,7 +9,7 @@ from InstructABSA.utils import T5Generator, T5Classifier
 from InstructABSA.config import Config
 from instructions import InstructionsHandler
 
-import wandb
+# import wandb
 from datetime import datetime
 
 try:
@@ -154,14 +154,14 @@ if config.mode != 'cli':
             'predict_with_generate': config.predict_with_generate,
             'use_mps_device': use_mps,
             'logging_strategy': 'steps',
-            'logging_steps': 1,
-            'report_to': 'wandb',
-            'run_name': f"instruct_absa_mt5_lr-{config.learning_rate}_samplesize-{config.sample_size if config.sample_size is not None else 'all'}_data-{config.id_tr_data_path.split('/')[3]}_{current_time}",
+            # 'logging_steps': 1,
+            # 'report_to': 'wandb',
+            # 'run_name': f"instruct_absa_mt5_lr-{config.learning_rate}_samplesize-{config.sample_size if config.sample_size is not None else 'all'}_data-{config.id_tr_data_path.split('/')[3]}_{current_time}",
 
             'seed': config.seed,
             'data_seed': config.seed
         }
-        os.environ["WANDB_PROJECT"] = "instruct-absa-seq2seq"
+        # os.environ["WANDB_PROJECT"] = "instruct-absa-seq2seq"
         model_trainer = t5_exp.train(id_tokenized_ds, **training_args)
         print('Model saved at: ', model_out_path)
     elif config.mode == 'eval':

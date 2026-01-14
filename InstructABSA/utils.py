@@ -153,6 +153,16 @@ class T5Classifier:
         """
         Udf to tokenize the input dataset.
         """
+        if isinstance(sample['text'], list):
+            sample['text'] = [str(s) for s in sample['text']]
+        else:
+            sample['text'] = str(sample['text'])
+
+        if isinstance(sample['labels'], list):
+            sample['labels'] = [str(s) for s in sample['labels']]
+        else:
+            sample['labels'] = str(sample['labels'])
+
         sample['input_ids'] = self.tokenizer(sample["text"], max_length = 512, truncation = True).input_ids
         sample['labels'] = self.tokenizer(sample["labels"], max_length = 64, truncation = True).input_ids
         return sample
