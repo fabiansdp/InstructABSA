@@ -1,7 +1,6 @@
 DATASET_TYPE="$1"
 TASK="$2"
 GPU="$3"
-MODEL_PATH="$4"
 
 export CUDA_VISIBLE_DEVICES="$GPU"
 
