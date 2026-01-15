@@ -197,7 +197,7 @@ class T5Classifier:
         trainer.save_model()
         return trainer
 
-    def get_labels(self, tokenized_dataset, batch_size = 4, sample_set = 'train'):
+    def get_labels(self, tokenized_dataset, batch_size = 4, max_length = 128, sample_set = 'train'):
         """
         Get the predictions from the trained model.
         """
@@ -213,7 +213,7 @@ class T5Classifier:
 
         for batch in tqdm(dataloader):
             batch = batch.to(self.device)
-            output_ids = self.model.generate(batch)
+            output_ids = self.model.generate(batch, max_length=max_length)
             output_texts = self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             for output_text in output_texts:
                 predicted_output.append(output_text)
