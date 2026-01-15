@@ -1,13 +1,15 @@
-LANGUAGE="$1"
-DATASET_TYPE="$2"
-TASK="$3"
-GPU="$4"
-MODEL_PATH="$5"
-SEED="$6"
+DATASET_TYPE="$1"
+TASK="$2"
+GPU="$3"
+MODEL_PATH="$4"
 
 export CUDA_VISIBLE_DEVICES="$GPU"
 
-python run_model.py -mode eval -model_checkpoint "$MODEL_PATH" \
--task "$TASK" -output_path ./Output \
--id_te_data_path "./Dataset/${DATASET_TYPE}/${TASK}/test.csv" \
--seed "$SEED"
+MODEL_DIR="models/${TASK}"
+MODEL_PATHS="$MODEL_DIR/*"
+
+for MODEL_PATH in $MODEL_PATHS; do
+    python run_model.py -mode eval -model_checkpoint "$MODEL_PATH" \
+    -task "$TASK" -output_path ./Output \
+    -id_te_data_path "./Dataset/${DATASET_TYPE}/${TASK}/test.csv"
+done
