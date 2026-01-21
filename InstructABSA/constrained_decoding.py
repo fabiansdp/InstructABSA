@@ -113,6 +113,6 @@ class ATEConstrainedDecoder(BaseConstrainedDecoder):
 	
 	def __init__(self, input_ids: torch.LongTensor, tokenizer: AutoTokenizer):
 		super().__init__(input_ids, tokenizer)
-		temp_special_tokens = [',', ' ,', ', ', ' , ', ':', ' :', ': ', ' : ']
+		temp_special_tokens = [',', ' ,', ', ', ' , ', ':']
 		self.special_words = self.special_words.union(set(tokenizer(temp_special_tokens, add_special_tokens=False, return_tensors='pt', padding=True, truncation=True)['input_ids'].reshape(-1).tolist()))
 		self._prepare_batch_allowed_tokens(tokenizer)
