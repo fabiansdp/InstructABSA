@@ -38,6 +38,7 @@ class Config(object):
         self.delim_instruction = None
         self.eos_instruction = None
         self.test_input = None
+        self.use_constrained_decoding = False
         self.parser = self.setup_parser()
         self.args = vars(self.parser.parse_args()) 
         self.__dict__.update(self.args)
@@ -75,4 +76,5 @@ class Config(object):
         parser.add_argument('-max_token_length', help='Sets maximum token output length', default=128, type=bool)
         parser.add_argument('-test_input', help='The input review to test', type=str)
         parser.add_argument('-seed', help='Random seed', default=42, type=int)
+        parser.add_argument("-use_constrained_decoding", action="store_true", help="Whether to use constrained decoding during generation")
         return parser

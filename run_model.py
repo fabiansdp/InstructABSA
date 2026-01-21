@@ -170,7 +170,8 @@ if config.mode != 'cli':
         if id_tokenized_ds.get("train") is not None:
             id_tr_pred_labels = t5_exp.get_labels(tokenized_dataset = id_tokenized_ds, sample_set = 'train', 
                                                   batch_size=config.per_device_eval_batch_size, 
-                                                  max_length = config.max_token_length)
+                                                  max_length = config.max_token_length,
+                                                  task=config.task if config.use_constrained_decoding else None)
             id_tr_df = pd.DataFrame(id_ds['train'])[['text', 'labels']]
             id_tr_df['labels'] = id_tr_df['labels'].apply(lambda x: x.strip())
             id_tr_df['pred_labels'] = id_tr_pred_labels

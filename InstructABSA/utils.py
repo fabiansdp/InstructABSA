@@ -8,6 +8,7 @@ from transformers import (
     DataCollatorForSeq2Seq, AutoTokenizer, AutoModelForSeq2SeqLM,
     Seq2SeqTrainingArguments, Trainer, Seq2SeqTrainer
 )
+from constrained_decoding import ATEConstrainedDecoder
 
 
 class T5Generator:
@@ -34,6 +35,12 @@ class T5Generator:
         labels = self.tokenizer(sample["labels"], max_length=64, truncation=True, padding=True)
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
+    
+    def _get_constrained_decoder(self, task):
+        if task == 'ate':
+            return ATEConstrainedDecoder
+        else:
+            return None
         
     def train(self, tokenized_datasets, **kwargs):
         """
@@ -53,7 +60,6 @@ class T5Generator:
             tokenizer=self.tokenizer,
             data_collator=self.data_collator,
         )
-        # print("Trainer device:", trainer.args.device
 
         # Finetune the model
         torch.cuda.empty_cache()
@@ -64,7 +70,7 @@ class T5Generator:
         trainer.save_model()
         return trainer
 
-    def get_labels(self, tokenized_dataset, batch_size = 4, max_length = 128, sample_set = 'train'):
+    def get_labels(self, tokenized_dataset, batch_size = 4, max_length = 128, sample_set = 'train', task = None):
         """
         Get the predictions from the trained model.
         """
@@ -76,11 +82,20 @@ class T5Generator:
         dataloader = DataLoader(tokenized_dataset[sample_set], batch_size=batch_size, collate_fn=collate_fn)
         predicted_output = []
         self.model.to(self.device)
-        print('Model loaded to: ', self.device)
 
         for batch in tqdm(dataloader):
             batch = batch.to(self.device)
-            output_ids = self.model.generate(batch, max_length = max_length)
+
+            # Load constrained decoder based on task
+            logits_processor = None
+            if task is not None:
+                logits_processor = self._get_constrained_decoder(task)
+
+            output_ids = self.model.generate(
+                batch, 
+                max_length = max_length,
+                logits_processor = [logits_processor] if logits_processor else None,
+            )
             output_texts = self.tokenizer.batch_decode(output_ids, skip_special_tokens=True)
             for output_text in output_texts:
                 predicted_output.append(output_text)
