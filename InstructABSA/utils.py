@@ -8,7 +8,7 @@ from transformers import (
     DataCollatorForSeq2Seq, AutoTokenizer, AutoModelForSeq2SeqLM,
     Seq2SeqTrainingArguments, Trainer, Seq2SeqTrainer
 )
-from constrained_decoding import ATEConstrainedDecoder
+from .constrained_decoding import ATEConstrainedDecoder
 
 
 class T5Generator:
@@ -89,7 +89,8 @@ class T5Generator:
             # Load constrained decoder based on task
             logits_processor = None
             if task is not None:
-                logits_processor = self._get_constrained_decoder(task)
+                ConstrainedDecoder = self._get_constrained_decoder(task)
+                logits_processor = ConstrainedDecoder(batch, self.tokenizer)
 
             output_ids = self.model.generate(
                 batch, 

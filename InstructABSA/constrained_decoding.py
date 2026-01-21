@@ -33,10 +33,9 @@ class BaseConstrainedDecoder(LogitsProcessor):
 			list_of_tokens = self.input_ids[i].tolist()
 			full_text = tokenizer.decode(list_of_tokens, skip_special_tokens=True)
 			target_sentence = self._extract_target_sentence(full_text)
-			print(target_sentence)
 
 			# Tokenize the target sentence to get the words
-			list_of_tokens = tokenizer(target_sentence, add_special_tokens=False, return_tensors='pt', padding=True, truncation=True)
+			list_of_tokens = tokenizer(target_sentence, add_special_tokens=False, return_tensors='pt', padding=True)['input_ids'].reshape(-1).tolist()
 
 			# Handle spaced first word
 			words_split = target_sentence.split(' ')
@@ -53,7 +52,7 @@ class BaseConstrainedDecoder(LogitsProcessor):
 			# Tokenizer all substrings, and filter them based on this rule: only keep those that are tokenized as a single token
 			tokenized_substrings = set()
 			for substring in substrings:
-				tokenized = tokenizer(substring, add_special_tokens=False, return_tensors='pt', padding=True, truncation=True)
+				tokenized = tokenizer(substring, add_special_tokens=False, return_tensors='pt', padding=True)
 				if tokenized['input_ids'].size(1) == 1:
 					tokenized_substrings.add(tokenized['input_ids'].item())
 				
