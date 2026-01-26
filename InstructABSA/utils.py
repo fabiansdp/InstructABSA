@@ -125,28 +125,28 @@ class T5Generator:
                 total_pred+=len(pred_list)
                 total_gt+=len(gt_list)
                 for gt_val in gt_list:
-                    gt_asp = gt_val.split(':')[0]
+                    gt_asp = gt_val.split(':')[0].strip()
 
                     try:
-                        gt_op = gt_val.split(':')[1]
+                        gt_op = gt_val.split(':')[1].strip()
                     except:
                         continue
 
                     try:
-                        gt_sent = gt_val.split(':')[2]
+                        gt_sent = gt_val.split(':')[2].strip()
                     except:
                         continue
 
                     for pred_val in pred_list:
-                        pr_asp = pred_val.split(':')[0]
+                        pr_asp = pred_val.split(':')[0].strip()
 
                         try:
-                            pr_op = pred_val.split(':')[1]
+                            pr_op = pred_val.split(':')[1].strip()
                         except:
                             continue
 
                         try:
-                            pr_sent = gt_val.split(':')[2]
+                            pr_sent = gt_val.split(':')[2].strip()
                         except:
                             continue
 
