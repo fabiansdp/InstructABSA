@@ -40,7 +40,7 @@ class T5Generator:
         if task == 'ate':
             return ATEConstrainedDecoder
         else:
-            return None
+            return ATEConstrainedDecoder  # Default to ATE for now
         
     def train(self, tokenized_datasets, **kwargs):
         """
